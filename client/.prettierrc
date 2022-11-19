@@ -1,0 +1,21 @@
+{
+  "printWidth": 120,
+  "useTabs": false,
+  "tabWidth": 2,
+  "semi": true,
+  "singleQuote": false,
+  "quoteProps": "as-needed",
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "importOrder": [
+    "^(^next$|@next|next$)",
+    "^(^react$|@react|react$)",
+    "<THIRD_PARTY_MODULES>",
+    "^@/(.*)$",
+    "^[./]"
+  ]
+}

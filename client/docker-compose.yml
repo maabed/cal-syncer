@@ -1,0 +1,51 @@
+version: '3.9'
+services:
+  syncer-app:
+    container_name: syncer-app
+    image: syncer-app:latest
+    hostname: syncer-app
+    build:
+      context: ./
+      target: development
+    env_file:
+      - ./.env.local
+    environment:
+    #   GOOGLE_CLIENT_ID: <REPLACE_YOUR_GOOGLE_CLIENT_ID>
+    #   GOOGLE_CLIENT_SECRET: <REPLACE_YOUR_GOOGLE_CLIENT_ID>
+    #   REGRES_API_BASE_URL: api_url
+    #   NEXTAUTH_SECRET: secret
+    #   NEXTAUTH_DEBUG: false
+    #   JWT_SECRET_KEY: secret
+      MONGODB_URI: mongodb://admin:adminpassword@syncer-mongodb:27017/syncer
+    ports:
+      - 3000:3000
+    depends_on:
+      - syncer-mongodb
+    networks:
+      - syncer-network
+      
+  syncer-mongodb:
+    image: mongo
+    restart: always
+    container_name: syncer-mongodb
+    hostname: syncer-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: syncer
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - syncer-mongodb-data:/data/db
+    networks:
+      - syncer-network
+
+# Set volumes for db as a named volume
+volumes:
+  syncer-mongodb-data:
+    driver: local # Use local driver for named volume
+# Set network as syncer-network
+networks:
+  syncer-network:
+    driver: bridge # default driver is bridge only, we don't need to specify it explicitly
