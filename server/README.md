@@ -1,5 +1,5 @@
 # Syncer
-Sync google Calendar events 
+Sync google Calendar events API
 build using:
   - TypeScript
   - Nodejs

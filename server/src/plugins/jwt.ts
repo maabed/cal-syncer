@@ -18,7 +18,9 @@ const jwtPlugin: FastifyPluginCallback = function (app, _, done) {
   const jwt: FastifyJWT = Object.freeze({
     verify(token: string) {
       const decoded = verifier(token)
-      if (!decoded || ['id'].some(key => !(key in decoded))) {
+      console.log('↓↓↓↓↓ decoded ↓↓↓↓↓')
+      console.log(decoded)
+      if (!decoded || ['id', 'refreshToken'].some(key => !(key in decoded))) {
         throw app.errors.unauthorized('invalid token payload')
       }
       return decoded as unknown as DecodedJwt
@@ -52,33 +54,23 @@ const jwtPlugin: FastifyPluginCallback = function (app, _, done) {
   })
 
   const authorize = async (request: FastifyRequest, reply: FastifyReply) => {
-    let sess, payload
+    let user, payload
     const token = jwt.extractToken(request) as string
     if (!token || typeof token !== 'string' || typeof token === 'undefined') {
-      // because /me is annoying
-      // if (req.raw.url.startsWith('/api/v3/user/me') && req.raw.method.toUpperCase() === 'GET') {
-      //   throw app.errors.unauthorized('No Authorization was found')
-      // }
       return reply.code(401).send('No token was found')
     }
     try {
       payload = (await jwt.verify(token)) as UserPayload
       if (!payload) return reply.code(401).send('Invalid session')
-      const {id} = payload // as UserPayload
-      sess = await app.models.User.findById(id)
-      if (!sess) return reply.code(401).send('Invalid session')
-      request.user = {id}
+      user = await app.models.User.findById(payload.id)
+      if (!user) return reply.code(401).send('Invalid session')
+      request.user = user
       done()
     } catch (err) {
       if (err.code === 'FAST_JWT_EXPIRED') {
         try {
-          // const {sub, session, role} = jwt.decode(token)
-          if (sess === false) {
-            delete request.cookies[`${tokenName}`]
-            reply.clearAuthCookies()
-            return reply.code(401).send('Token and Session expired')
-          }
           request.log.info({message: 'Token expired, going to refresh..'})
+          return reply.code(401).send('Token and Session expired')
           done()
         } catch (error) {
           return reply.code(401).send(error.message)

@@ -37,6 +37,7 @@
     "ajv-formats": "^2.1.1",
     "altair-fastify-plugin": "^5.0.2",
     "axios": "^1.1.2",
+    "dayjs": "^1.11.6",
     "dotenv": "^16.0.3",
     "env-schema": "^5.1.0",
     "fast-json-stringify": "^5.4.0",

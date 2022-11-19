@@ -1,10 +1,11 @@
 import { google } from 'googleapis';
+import dayjs from 'dayjs';
 import { AbstractService } from './abstract';
 
-const calendar = google.calendar('v3')
+const calendar = google.calendar('v3');
 
 export class MeetingService extends AbstractService {
-  async add(id){
+  async add(id) {
     try {
       const user = await this.models.User.findById(id);
       if (!user) {
@@ -30,14 +31,25 @@ export class MeetingService extends AbstractService {
         throw this.errors.notFound('user is not exist');
       }
 
+      if (!user.refreshToken) {
+        const userAccount = await this.models.Account.findOne({ userId: user._id });
+        if (!userAccount) {
+          throw this.errors.badRequest('cant resolve user refresh token');
+        }
+        console.log('↓↓↓↓↓ userAccount ↓↓↓↓↓');
+        console.log(userAccount);
+        await this.models.User.findOneAndUpdate({ _id: user._id }, { refreshToken: userAccount.refresh_token });
+      }
+
       // sync user meeting before fetching
       await this.syncUserMeetings(userId);
 
-      const meetings = await this.models.Meeting.find(userId);
+      const meetings = await this.models.Meeting.find({ userId }).sort({ 'start.datetime': -1 }).limit(50);
 
       return {
         meetings: meetings,
         count: meetings.length,
+        totalCount: meetings.length,
       };
     } catch (error) {
       this.log.error(error, 'Falied to fetching user meetings');
@@ -51,47 +63,72 @@ export class MeetingService extends AbstractService {
       if (!user) {
         throw this.errors.notFound('user is not exist');
       }
+
       const oauthClient = this.services.gcal.getOAuth2Client(user.refreshToken);
       google.options({ auth: oauthClient });
-      // @ts-ignore this should wark as well
-      // const calendar = google.calendar({version: 'v3', auth: oauthClient});
 
       const { data } = await calendar.events.list({
         calendarId: 'primary',
-        timeMin: new Date().toISOString(),
-        maxResults: 50,
+        timeMin: dayjs().subtract(10, 'days').toISOString(),
+        maxResults: 100,
+        timeMax: dayjs().add(10, 'days').toISOString(),
         singleEvents: true,
-        orderBy: 'startTime'
       });
 
       if (data.items && data.items.length > 0) {
-        const meetings = data.items.map(v => ({ ...v, userId: id }));
+        // const meetings = data.items.map((v) => ({ ...v,  }));
+        // const meetings = data.items.map(({ id: gId, ...rest }) => ({ gId, userId: id, ...rest}));
+        // get ids from gcal events and compaire with whats we have on db to avoide insert/upsert Ops 
+        // const ids = data.items.map((item) => item.id);
+        // const meetingIds = await this.models.Meeting.find({ userId }).map((item) => item.gid);
+        // TODO: compaire meetingIds VS ids
+
+        // serialize cal input (basic)
+        const meetings = data.items.map(({ id: gId, ...rest }) => ({
+          gId,
+          userId: id,
+          ...rest,
+          status: rest.attendees.filter((row) => row.email === user.email)[0]?.responseStatus,
+        }));
+
         // Skipping duplicate events with unordered insert
-        await this.models.Meeting.insertMany(meetings, { ordered: false });
+        console.log('↓↓↓↓↓ meetings ↓↓↓↓↓')
+        console.log(meetings)
+        await this.models.Meeting.insertMany(meetings, { ordered: false })
+          .then(result => {
+            console.log('↓↓↓↓↓ result ↓↓↓↓↓')
+            console.log(result)
+            return result;
+          })
+          .catch(error => {
+            // duplicate key error thats fine, because we almost keep track the same time frame 
+            if (error.code === 11000) {
+              return true;
+            }
+            this.log.debug(error.message, 'Falied while syncing user meetings');
+            throw this.errors.internal(error.message);
+          });
+        console.log('↓↓↓↓↓ meetings ↓↓↓↓↓')
+        console.log(meetings)
       }
       return [];
     } catch (error) {
-      this.log.error(error, 'Falied while syncing user meetings');
-      throw this.errors.internal(error.message);
+      this.log.error('Falied while syncing user meetings');
+      return true;
     }
   }
 
   async syncUsersMeetingWorker() {
     console.log('Start syncing calender for all users....');
-    // try {
     const users = await this.models.User.find().sort({ lastSync: -1 });
-    console.log('↓↓↓↓↓ users ↓↓↓↓↓')
-    console.log(users)
+    console.log('↓↓↓↓↓ users ↓↓↓↓↓');
+    console.log(users);
 
     for (const user of users) {
       if (user.refreshToken && user.refreshToken !== null) {
-        await this.services.meeting.syncUserMeetings(user.id)
+        await this.syncUserMeetings(user._id);
       }
     }
     return true;
-    // } catch (error) {
-    //   this.log.error(error, 'Falied while syncing user meetings');
-    //   throw this.errors.internal(error.message);
-    // }
   }
 }

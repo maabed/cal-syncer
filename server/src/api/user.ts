@@ -7,7 +7,7 @@ const userControllers: FastifyPluginCallback = function (app, _, done) {
     {
       schema: UserSchema.syncUser,
     },
-    async (req: FastifyRequest<{ Body: { id: string, email: string, name: string, accessToken: string, refreshToken: string, idToken: string }}>, reply) => {
+    async (req: FastifyRequest<{ Body: { id: string, email: string, name: string, accessToken: string, refreshToken: string, idToken?: string }}>, reply) => {
       const { id, email, name, accessToken, refreshToken, idToken } = req.body;
       console.log('↓↓↓↓↓ req.body ↓↓↓↓↓');
       console.log(req.body);
