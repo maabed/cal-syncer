@@ -26,11 +26,11 @@ const Header: NextComponentType = () => {
             Syncer
           </Text>
           <HStack as={'nav'} spacing={4} display={{ base: 'none', md: 'flex' }}>
-            {navLinks.map((link) => (
+            {/* {navLinks.map((link) => (
               <NavLink key={link.id} href={link.href}>
                 {link.label}
               </NavLink>
-            ))}
+            ))} */}
           </HStack>
         </HStack>
         <Flex alignItems={'center'}>
