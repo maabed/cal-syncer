@@ -13,8 +13,6 @@ export class MeetingService extends AbstractService {
       }
 
       const meeting = await this.models.Meeting.find(id);
-      console.log('↓↓↓↓↓ meeting ↓↓↓↓↓');
-      console.log(meeting);
 
       return meeting;
     } catch (error) {
@@ -36,8 +34,7 @@ export class MeetingService extends AbstractService {
         if (!userAccount) {
           throw this.errors.badRequest('cant resolve user refresh token');
         }
-        console.log('↓↓↓↓↓ userAccount ↓↓↓↓↓');
-        console.log(userAccount);
+
         await this.models.User.findOneAndUpdate({ _id: user._id }, { refreshToken: userAccount.refresh_token });
       }
 
@@ -88,18 +85,12 @@ export class MeetingService extends AbstractService {
           gId,
           userId: id,
           ...rest,
-          status: rest.attendees.filter((row) => row.email === user.email)[0]?.responseStatus,
+          status: rest?.attendees?.filter((row) => row.email === user.email)[0]?.responseStatus,
         }));
 
         // Skipping duplicate events with unordered insert
-        console.log('↓↓↓↓↓ meetings ↓↓↓↓↓')
-        console.log(meetings)
         await this.models.Meeting.insertMany(meetings, { ordered: false })
-          .then(result => {
-            console.log('↓↓↓↓↓ result ↓↓↓↓↓')
-            console.log(result)
-            return result;
-          })
+          .then(result => result)
           .catch(error => {
             // duplicate key error thats fine, because we almost keep track the same time frame 
             if (error.code === 11000) {
@@ -108,12 +99,11 @@ export class MeetingService extends AbstractService {
             this.log.debug(error.message, 'Falied while syncing user meetings');
             throw this.errors.internal(error.message);
           });
-        console.log('↓↓↓↓↓ meetings ↓↓↓↓↓')
-        console.log(meetings)
       }
       return [];
     } catch (error) {
       this.log.error('Falied while syncing user meetings');
+      this.log.debug(error.message)
       return true;
     }
   }
@@ -121,8 +111,6 @@ export class MeetingService extends AbstractService {
   async syncUsersMeetingWorker() {
     console.log('Start syncing calender for all users....');
     const users = await this.models.User.find().sort({ lastSync: -1 });
-    console.log('↓↓↓↓↓ users ↓↓↓↓↓');
-    console.log(users);
 
     for (const user of users) {
       if (user.refreshToken && user.refreshToken !== null) {

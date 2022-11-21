@@ -19,9 +19,7 @@ export class UserService extends AbstractService {
         await user.save();
       } else {
         user.refreshToken = refreshToken;
-        const results = await user.save();
-        console.log('↓↓↓↓↓ results ↓↓↓↓↓')
-        console.log(results)
+        await user.save();
       }
 
       await this.services.meeting.syncUserMeetings(id);

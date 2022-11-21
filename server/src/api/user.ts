@@ -9,11 +9,7 @@ const userControllers: FastifyPluginCallback = function (app, _, done) {
     },
     async (req: FastifyRequest<{ Body: { id: string, email: string, name: string, accessToken: string, refreshToken: string, idToken?: string }}>, reply) => {
       const { id, email, name, accessToken, refreshToken, idToken } = req.body;
-      console.log('↓↓↓↓↓ req.body ↓↓↓↓↓');
-      console.log(req.body);
-      const results = await app.services.user.sync({ id, email, name, accessToken, refreshToken, idToken });
-      console.log('↓↓↓↓↓ results on contraller ↓↓↓↓↓')
-      console.log(results)
+      await app.services.user.sync({ id, email, name, accessToken, refreshToken, idToken });
       return reply.status(200).send(true);
     },
   );

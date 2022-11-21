@@ -18,8 +18,6 @@ const jwtPlugin: FastifyPluginCallback = function (app, _, done) {
   const jwt: FastifyJWT = Object.freeze({
     verify(token: string) {
       const decoded = verifier(token)
-      console.log('↓↓↓↓↓ decoded ↓↓↓↓↓')
-      console.log(decoded)
       if (!decoded || ['id', 'refreshToken'].some(key => !(key in decoded))) {
         throw app.errors.unauthorized('invalid token payload')
       }
