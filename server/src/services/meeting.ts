@@ -41,7 +41,7 @@ export class MeetingService extends AbstractService {
       // sync user meeting before fetching
       await this.syncUserMeetings(userId);
 
-      const meetings = await this.models.Meeting.find({ userId }).sort({ 'start.datetime': -1 }).limit(50);
+      const meetings = await this.models.Meeting.find({ userId }).sort({ 'start.dateTime': -1 }).limit(50);
 
       return {
         meetings: meetings,

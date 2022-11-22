@@ -49,7 +49,7 @@ export default function registerMeetingModel(mongoose: Mongoose): Model<Meeting>
     }
   });
 
-  MeetingSchema.index({ gId: 1 }, { unique: true })
+  MeetingSchema.index({ gId: 1, userId: 1 }, { unique: true })
   return mongoose.model<Meeting>('Meeting', MeetingSchema);
 }
 
