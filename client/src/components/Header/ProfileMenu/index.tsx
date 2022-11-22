@@ -35,6 +35,7 @@ export const ProfileMenu: FC = () => {
         <MenuItem
           onClick={(e) => {
             e.preventDefault();
+            localStorage.removeItem('tasks');
             signOut({ callbackUrl: `${router.basePath}/auth/signIn` });
           }}
         >
